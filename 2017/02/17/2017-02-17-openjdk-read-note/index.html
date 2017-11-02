@@ -1,0 +1,55 @@
+<!DOCTYPE html><html lang="zh-Hans"><head><meta charset="utf-8"><meta http-equiv="X-UA-Compatible" content="IE=edge"><meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0"><meta name="author" content="blademainer"><link rel="icon" href="/hexo.png"><title>blademainer</title><meta name="description"><link rel="alternate" type="application/rss+xml" title="blademainer" href="/atom.xml"><link rel="stylesheet" href="//maxcdn.bootstrapcdn.com/font-awesome/4.5.0/css/font-awesome.min.css"><link rel="stylesheet" href="/css/bootstrap.min.css"><link rel="stylesheet" href="/css/main.css"><link rel="stylesheet" href="/css/highlight.css"><link rel="stylesheet" href="//fonts.googleapis.com/css?family=Lora:400,700,400italic,700italic"><link rel="stylesheet" href="//fonts.googleapis.com/css?family=Open+Sans:300italic,400italic,600italic,700italic,800italic,400,300,600,700,800">
+</head><body><nav class="navbar navbar-default navbar-fixed-top navbar-custom"><div class="container-fluid"><div class="navbar-header"><button type="button" data-toggle="collapse" data-target="#main-navbar" class="navbar-toggle"><span class="sr-only">Toggle navigation</span><span class="icon-bar"></span><span class="icon-bar"></span><span class="icon-bar"></span></button><a href="/" class="navbar-brand">blademainer</a></div><div id="main-navbar" class="collapse navbar-collapse"><ul class="nav navbar-nav navbar-right"><li><a href="/archives">Archive</a></li><li><a href="https://github.com/blademainer/blademainer.github.com">Github</a></li><li><a href="/about/">About</a></li></ul></div><div class="avatar-container"><div class="avatar-img-border"><a href="/"><img src="/hexo.png" class="avatar-img"></a></div></div></div></nav><header class="header-section"><div class="intro-header no-img"><div class="container"><div class="row"><div class="col-lg-8 col-lg-offset-2 col-md-10 col-md-offset-1"><div class="post-heading"><h1>openjdk阅读笔记</h1><p class="post-meta">Posted on Feb 17 2017 · <a href="/tags/java/" class="tag post-meta">java</a> · <a href="/tags/openjdk/" class="tag post-meta">openjdk</a> · <a href="/tags/hotspot/" class="tag post-meta">hotspot</a></p></div></div></div></div></div></header><div class="container"><div class="row"><div class="col-lg-8 col-lg-offset-2 col-md-10 col-md-offset-1"><article role="main" class="blog-post"><h1 id="openjdk目录结构"><a href="#openjdk目录结构" class="headerlink" title="openjdk目录结构"></a>openjdk目录结构</h1><pre><code>├─agent                            Serviceability Agent的客户端实现
+├─make                             用来build出HotSpot的各种配置文件
+├─src                              HotSpot VM的源代码
+│  ├─cpu                            CPU相关代码（汇编器、模板解释器、ad文件、部分runtime函数在这里实现）
+│  ├─os                             操作系相关代码
+│  ├─os_cpu                         操作系统+CPU的组合相关的代码
+│  └─share                          平台无关的共通代码
+│      ├─tools                        工具
+│      │  ├─hsdis                      反汇编插件
+│      │  ├─IdealGraphVisualizer       将server编译器的中间代码可视化的工具
+│      │  ├─launcher                   启动程序“java”
+│      │  ├─LogCompilation             将-XX:+LogCompilation输出的日志（hotspot.log）整理成更容易阅读的格式的工具
+│      │  └─ProjectCreator             生成Visual Studio的project文件的工具
+│      └─vm                           HotSpot VM的核心代码
+│          ├─adlc                       平台描述文件（上面的cpu或os_cpu里的*.ad文件）的编译器
+│          ├─asm                        汇编器接口
+│          ├─c1                         client编译器（又称“C1”）
+│          ├─ci                         动态编译器的公共服务/从动态编译器到VM的接口
+│          ├─classfile                  类文件的处理（包括类加载和系统符号表等）
+│          ├─code                       动态生成的代码的管理
+│          ├─compiler                   从VM调用动态编译器的接口
+│          ├─gc_implementation          GC的实现
+│          │  ├─concurrentMarkSweep      Concurrent Mark Sweep GC的实现
+│          │  ├─g1                       Garbage-First GC的实现（不使用老的分代式GC框架）
+│          │  ├─parallelScavenge         ParallelScavenge GC的实现（server VM默认，不使用老的分代式GC框架）
+│          │  ├─parNew                   ParNew GC的实现
+│          │  └─shared                   GC的共通实现
+│          ├─gc_interface               GC的接口
+│          ├─interpreter                解释器，包括“模板解释器”（官方版在用）和“C++解释器”（官方版不在用）
+│          ├─libadt                     一些抽象数据结构
+│          ├─memory                     内存管理相关（老的分代式GC框架也在这里）
+│          ├─oops                       HotSpot VM的对象系统的实现
+│          ├─opto                       server编译器（又称“C2”或“Opto”）
+│          ├─prims                      HotSpot VM的对外接口，包括部分标准库的native部分和JVMTI实现
+│          ├─runtime                    运行时支持库（包括线程管理、编译器调度、锁、反射等）
+│          ├─services                   主要是用来支持JMX之类的管理功能的接口
+│          ├─shark                      基于LLVM的JIT编译器（官方版里没有使用）
+│          └─utilities                  一些基本的工具类
+└─test                             单元测试
+</code></pre></article><ul class="pager blog-pager"><li class="previous"><a href="/2017/03/14/bash-shortcuts/" data-toggle="tooltip" data-placement="top" title="bash快捷键">← Previous Post</a></li><li class="next"><a href="/2017/02/14/ali-java-specification/" data-toggle="tooltip" data-placement="top" title="阿里巴巴Java开发手册">Next Post →</a></li></ul><div id="cloud-tie-wrapper" class="cloud-tie-wrapper"></div><script src="https://img1.cache.netease.com/f2e/tie/yun/sdk/loader.js"></script><script>var cloudTieConfig = {
+    url: document.location.href, 
+    sourceId: "",
+    productKey: "fdb2db38bb5548f6bba8e02165a9f755",
+    target: "cloud-tie-wrapper"
+};
+Tie.loader("aHR0cHM6Ly9hcGkuZ2VudGllLjE2My5jb20vcGMvbGl2ZXNjcmlwdC5odG1s", true);</script><div id="hot-news-wrap" class="hot-news-wrap"></div><script>var yunModuleEnv = true;</script><script src="https://img1.cache.netease.com/f2e/tie/yun/sdk/loader.js"></script><script>var yunTieProductKey = "fdb2db38bb5548f6bba8e02165a9f755";
+var yunHotNewsWrap = "hot-news-wrap";
+Tie.loader("aHR0cHM6Ly9hcGkuZ2VudGllLjE2My5jb20vZXh0ZW5kL2hvdF9uZXdzX3NjcmlwdC5odG1s", true);</script></div></div></div><footer><div class="container beautiful-jekyll-footer"><div class="row"><div class="col-lg-8 col-lg-offset-2 col-md-10 col-md-offset-1"><ul class="list-inline text-center footer-links"><li><a href="https://github.com/blademainer" title="GitHub"><span class="fa-stack fa-lg"><i class="fa fa-circle fa-stack-2x"></i><i class="fa fa-stack-1x fa-inverse fa-github"></i></span></a></li><li><a href="/atom.xml" title="RSS"><span class="fa-stack fa-lg"><i class="fa fa-circle fa-stack-2x"></i><i class="fa fa-stack-1x fa-inverse fa-rss"></i></span></a></li><li><a href="mailto:blademainer@gmail.com" title="Email me"><span class="fa-stack fa-lg"><i class="fa fa-circle fa-stack-2x"></i><i class="fa fa-stack-1x fa-inverse fa-envelope"></i></span></a></li><li><a href="https://www.zhihu.com/people/xiong-ying-qi" title="ZhiHu"><span class="fa-stack fa-lg"><i class="fa fa-circle fa-stack-2x"></i><i class="fa fa-stack-1x fa-inverse fa-link"></i></span></a></li></ul><p class="copyright text-muted">© blademainer • 2017 • <a href="mailto:undefined"></a></p></div></div></div></footer><script src="/js/jquery-1.11.2.min.js"></script><script src="/js/bootstrap.min.js"></script><script src="/js/main.js"></script><script src="/js/highlight.min.js"></script><script>hljs.initHighlightingOnLoad();</script><script type="text/javascript">var _hmt = _hmt || [];
+(function() {
+  var hm = document.createElement("script");
+  hm.src = "//hm.baidu.com/hm.js?401b87cd7ccfbae7934d36a06c2bb321";
+  var s = document.getElementsByTagName("script")[0]; 
+  s.parentNode.insertBefore(hm, s);
+})();</script></body></html>

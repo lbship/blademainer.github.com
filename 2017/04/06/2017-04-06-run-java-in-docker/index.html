@@ -1,0 +1,125 @@
+<!DOCTYPE html><html lang="zh-Hans"><head><meta charset="utf-8"><meta http-equiv="X-UA-Compatible" content="IE=edge"><meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0"><meta name="author" content="blademainer"><link rel="icon" href="/hexo.png"><title>blademainer</title><meta name="description"><link rel="alternate" type="application/rss+xml" title="blademainer" href="/atom.xml"><link rel="stylesheet" href="//maxcdn.bootstrapcdn.com/font-awesome/4.5.0/css/font-awesome.min.css"><link rel="stylesheet" href="/css/bootstrap.min.css"><link rel="stylesheet" href="/css/main.css"><link rel="stylesheet" href="/css/highlight.css"><link rel="stylesheet" href="//fonts.googleapis.com/css?family=Lora:400,700,400italic,700italic"><link rel="stylesheet" href="//fonts.googleapis.com/css?family=Open+Sans:300italic,400italic,600italic,700italic,800italic,400,300,600,700,800">
+</head><body><nav class="navbar navbar-default navbar-fixed-top navbar-custom"><div class="container-fluid"><div class="navbar-header"><button type="button" data-toggle="collapse" data-target="#main-navbar" class="navbar-toggle"><span class="sr-only">Toggle navigation</span><span class="icon-bar"></span><span class="icon-bar"></span><span class="icon-bar"></span></button><a href="/" class="navbar-brand">blademainer</a></div><div id="main-navbar" class="collapse navbar-collapse"><ul class="nav navbar-nav navbar-right"><li><a href="/archives">Archive</a></li><li><a href="https://github.com/blademainer/blademainer.github.com">Github</a></li><li><a href="/about/">About</a></li></ul></div><div class="avatar-container"><div class="avatar-img-border"><a href="/"><img src="/hexo.png" class="avatar-img"></a></div></div></div></nav><header class="header-section"><div class="intro-header no-img"><div class="container"><div class="row"><div class="col-lg-8 col-lg-offset-2 col-md-10 col-md-offset-1"><div class="post-heading"><h1>在docker内运行java的问题</h1><p class="post-meta">Posted on Apr 6 2017 · <a href="/tags/java/" class="tag post-meta">java</a> · <a href="/tags/docker/" class="tag post-meta">docker</a></p></div></div></div></div></div></header><div class="container"><div class="row"><div class="col-lg-8 col-lg-offset-2 col-md-10 col-md-offset-1"><article role="main" class="blog-post"><blockquote>
+<p>众所周知，当我们执行没有任何调优参数（如<code>java -jar myapplication.jar</code>）的 Java 应用程序时，JVM 会自动调整几个参数，以便在执行环境中具有最佳性能。但是许多开发者发现，如果让 JVM ergonomics (即JVM人体工程学，用于自动选择和行为调整)对垃圾收集器、堆大小和运行编译器使用默认设置值，运行在Linux容器（docker,rkt,runC,lxcfs 等）中的 Java 进程会与我们的预期表现严重不符。</p>
+</blockquote>
+<p>本篇文章采用简单的方法来向开发人员展示在 Linux 容器中打包 Java 应用程序时应该知道什么。</p>
+<a id="more"></a>
+<h1 id="存在的问题"><a href="#存在的问题" class="headerlink" title="存在的问题"></a>存在的问题</h1><p>我们往往把容器当虚拟机，让它定义一些虚拟 CPU 和虚拟内存。其实容器更像是一种隔离机制：它可以让一个进程中的资源（CPU，内存，文件系统，网络等）与另一个进程中的资源完全隔离。Linux 内核中的 cgroups 功能用于实现这种隔离。<br>然而，一些从执行环境收集信息的应用程序已经在 cgroups 存在之前就被执行了。“top”，“free”，“ps”，甚至 JVM 等工具都没有针对在容器内执行高度受限的 Linux 进程进行优化。</p>
+<h2 id="场景还原"><a href="#场景还原" class="headerlink" title="场景还原"></a>场景还原</h2><p>实验采用的是本人编写的测试代码。代码很简单，就是不断的创建byte数组并保存到list里面。代码所在项目：<br><a href="https://github.com/blademainer/java-memory-demo" target="_blank" rel="external">blademainer/java-memory-demo</a><br>运行步骤：</p>
+<ol>
+<li><p>首先使用docker运行java的测试镜像，并限制其最大可用的内存为<code>64M</code></p>
+<pre><code class="bash">docker run --name java-memory-demo --memory-swap=0 --memory-swappiness=0 -m 64m -e JAVA_OPTIONS=&quot;-XX:+HeapDumpOnOutOfMemoryError -XX:HeapDumpPath=/jvmdump/&quot; -v `pwd`/jvmdump:/jvmdump -d blademainer/java-memory-demo
+</code></pre>
+<blockquote>
+<p>JAVA_OPTIONS=”-XX:+HeapDumpOnOutOfMemoryError -XX:HeapDumpPath=/jvmdump/“ 的作用是：在JVM报oom时dump出堆信息。</p>
+</blockquote>
+</li>
+<li><p>另起一个终端，监听镜像的事件:</p>
+<pre><code class="bash">docker events -f image=blademainer/java-memory-demo
+</code></pre>
+</li>
+</ol>
+<p>运行一段时间后，java容器会被杀死，运行日志如下：</p>
+<pre><code class="bash">------------------------------------------
+MaxMemory: 3.46G
+FreeMemory: 197.48M
+TotalMemory: 240.0M
+Usable: 3.42G
+------------------------------------------
+Name: Code Cache
+PeakUsage: init = 2555904(2.44M) used = 1242176(1.18M) committed = 2555904(2.44M) max = 251658240(240.0M)
+------------------------------------------
+Name: Metaspace
+PeakUsage: init = 0(0) used = 3276728(3.12M) committed = 4980736(4.75M) max = -1(-1)
+------------------------------------------
+Name: Compressed Class Space
+PeakUsage: init = 0(0) used = 345832(337.73K) committed = 524288(512.0K) max = 1073741824(1.0G)
+------------------------------------------
+Name: PS Eden Space
+CollectionUsage: init = 66060288(63.0M) used = 0(0) committed = 0(0) max = 1371537408(1.28G)
+CollectionUsageThreshold: 0
+CollectionUsageThresholdCount: 0
+PeakUsage: init = 66060288(63.0M) used = 44585544(42.52M) committed = 66060288(63.0M) max = 1371537408(1.28G)
+------------------------------------------
+Name: PS Survivor Space
+CollectionUsage: init = 10485760(10.0M) used = 0(0) committed = 0(0) max = 10485760(10.0M)
+CollectionUsageThreshold: 0
+CollectionUsageThresholdCount: 0
+PeakUsage: init = 10485760(10.0M) used = 0(0) committed = 10485760(10.0M) max = 10485760(10.0M)
+------------------------------------------
+Name: PS Old Gen
+CollectionUsage: init = 175112192(167.0M) used = 0(0) committed = 0(0) max = 2785017856(2.59G)
+CollectionUsageThreshold: 0
+CollectionUsageThresholdCount: 0
+PeakUsage: init = 175112192(167.0M) used = 0(0) committed = 175112192(167.0M) max = 2785017856(2.59G)
+------------------------------------------
+PS Scavenge
+CollectionCount: 0
+CollectionTime: 0ms
+------------------------------------------
+PS MarkSweep
+CollectionCount: 0
+CollectionTime: 0ms
+Allocating memory: 10485760
+Killed
+</code></pre>
+<h1 id="原因分析"><a href="#原因分析" class="headerlink" title="原因分析"></a>原因分析</h1><h2 id="事件分析"><a href="#事件分析" class="headerlink" title="事件分析"></a>事件分析</h2><p>第二步<code>docker events -f image=blademainer/java-memory-demo</code>事件监听输出如下：</p>
+<pre><code class="bash">2017-04-29T23:01:24.753731857+08:00 container create 92f98a1773549572cf8c3435350a6d1a885196884e957b35b5e1fa572e617a3b (image=blademainer/java-memory-demo, name=java-memory-demo)
+2017-04-29T23:01:24.948240973+08:00 container start 92f98a1773549572cf8c3435350a6d1a885196884e957b35b5e1fa572e617a3b (image=blademainer/java-memory-demo, name=java-memory-demo)
+2017-04-29T23:01:25.015361538+08:00 container oom 92f98a1773549572cf8c3435350a6d1a885196884e957b35b5e1fa572e617a3b (image=blademainer/java-memory-demo, name=java-memory-demo)
+2017-04-29T23:01:25.092596145+08:00 container die 92f98a1773549572cf8c3435350a6d1a885196884e957b35b5e1fa572e617a3b (exitCode=137, image=blademainer/java-memory-demo, name=java-memory-demo)
+</code></pre>
+<p>输出内容的第四行有个致命的报错<code>container oom</code>导致java程序直接退出。或者使用<code>docker inspect java-memory-demo</code>也能看到错误信息以及状态:</p>
+<pre><code class="json">&quot;State&quot;: {
+            &quot;Status&quot;: &quot;exited&quot;,
+            &quot;Running&quot;: false,
+            &quot;Paused&quot;: false,
+            &quot;Restarting&quot;: false,
+            &quot;OOMKilled&quot;: true,
+            &quot;Dead&quot;: false,
+            &quot;Pid&quot;: 0,
+            &quot;ExitCode&quot;: 137,
+            &quot;Error&quot;: &quot;&quot;,
+            &quot;StartedAt&quot;: &quot;2017-04-29T15:01:24.940805854Z&quot;,
+            &quot;FinishedAt&quot;: &quot;2017-04-29T15:01:25.092588915Z&quot;
+        }
+</code></pre>
+<p>docker直接杀掉了java容器，此时的退出前的java程序不会报任何错误信息也不会打印错误堆栈、调用shutdownHook等。<code>jvmdump</code>也不会有dump的文件输出：<br><img src="/images/post/run-java-in-docker-1.png" alt=""></p>
+<h2 id="原因分析-1"><a href="#原因分析-1" class="headerlink" title="原因分析"></a>原因分析</h2><p>按道理JVM会自动根据当前系统的可用内存来自动分配JVM的内存大小，那么JVM分配的内存应该不大于<code>64M</code>，然而我们的java程序输出日志如下：</p>
+<pre><code>MaxMemory: 3.46G
+FreeMemory: 207.48M
+TotalMemory: 240.0M
+Usable: 3.43G
+</code></pre><p><code>MaxMemory: 3.46G</code>代表最大可用内存为<code>3.46G</code>，明显不是我们期望的结果。JVM之所以<code>不知道</code>他所在的环境是被限制了内存大小的，是因为docker采用<a href="http://www.infoq.com/cn/articles/docker-kernel-knowledge-cgroups-resource-isolation" target="_blank" rel="external">cgroup</a>技术来限制资源的，而JVM无法感知该限制，导致JVM根据宿主机器的最大内存来分配可用内存。</p>
+<h1 id="解决方案"><a href="#解决方案" class="headerlink" title="解决方案"></a>解决方案</h1><h2 id="使用启动参数来限制容器内JVM的内存"><a href="#使用启动参数来限制容器内JVM的内存" class="headerlink" title="使用启动参数来限制容器内JVM的内存"></a>使用启动参数来限制容器内JVM的内存</h2><pre><code class="bash">docker run --name java-memory-demo --memory-swap=0 --memory-swappiness=0 -m 256m -e JAVA_OPTIONS=&quot;-Xmx128m -XX:+HeapDumpOnOutOfMemoryError -XX:HeapDumpPath=/jvmdump/&quot; -v `pwd`/jvmdump:/jvmdump -d blademainer/java-memory-demo
+</code></pre>
+<blockquote>
+<p><code>JAVA_OPTIONS</code>增加了<code>-Xmx128m</code></p>
+</blockquote>
+<p>JVM正确的打印了异常日志日志、调用了ShutdownHook以及正确的输出了HeapDumpPath<br><img src="/images/post/run-java-in-docker-2.png" alt=""></p>
+<h2 id="使用可以识别cgroup限制的JVM"><a href="#使用可以识别cgroup限制的JVM" class="headerlink" title="使用可以识别cgroup限制的JVM"></a>使用可以识别<code>cgroup</code>限制的<code>JVM</code></h2><ul>
+<li><a href="http://hg.openjdk.java.net/jdk9/jdk9/hotspot/rev/5f1d1df0ea49" target="_blank" rel="external">jdk9</a></li>
+<li><a href="https://hub.docker.com/r/fabric8/java-jboss-openjdk8-jdk/" target="_blank" rel="external">fabric8/java-jboss-openjdk8-jdk</a></li>
+</ul>
+<h1 id="Tomcat容器的运行"><a href="#Tomcat容器的运行" class="headerlink" title="Tomcat容器的运行"></a>Tomcat容器的运行</h1><p>运行时使用<code>JAVA_OPTS</code>环境变量：</p>
+<pre><code class="bash">docker run --memory-swap=0 --memory-swappiness=0 -m 256m -e JAVA_OPTS=&quot;-Xmx128m -XX:+HeapDumpOnOutOfMemoryError -XX:HeapDumpPath=/jvmdump/&quot; -v `pwd`/jvmdump:/jvmdump tomcat
+</code></pre>
+<h1 id="参考"><a href="#参考" class="headerlink" title="参考"></a>参考</h1><ul>
+<li><a href="https://developers.redhat.com/blog/2017/03/14/java-inside-docker/" target="_blank" rel="external">java-inside-docker</a></li>
+<li><a href="http://docs.oracle.com/javase/1.5.0/docs/guide/vm/gc-ergonomics.html" target="_blank" rel="external">gc-ergonomics</a></li>
+</ul>
+</article><ul class="pager blog-pager"><li class="next"><a href="/2017/03/23/run-docker-in-docker/" data-toggle="tooltip" data-placement="top" title="在docker内运行docker命令">Next Post →</a></li></ul><div id="cloud-tie-wrapper" class="cloud-tie-wrapper"></div><script src="https://img1.cache.netease.com/f2e/tie/yun/sdk/loader.js"></script><script>var cloudTieConfig = {
+    url: document.location.href, 
+    sourceId: "",
+    productKey: "fdb2db38bb5548f6bba8e02165a9f755",
+    target: "cloud-tie-wrapper"
+};
+Tie.loader("aHR0cHM6Ly9hcGkuZ2VudGllLjE2My5jb20vcGMvbGl2ZXNjcmlwdC5odG1s", true);</script><div id="hot-news-wrap" class="hot-news-wrap"></div><script>var yunModuleEnv = true;</script><script src="https://img1.cache.netease.com/f2e/tie/yun/sdk/loader.js"></script><script>var yunTieProductKey = "fdb2db38bb5548f6bba8e02165a9f755";
+var yunHotNewsWrap = "hot-news-wrap";
+Tie.loader("aHR0cHM6Ly9hcGkuZ2VudGllLjE2My5jb20vZXh0ZW5kL2hvdF9uZXdzX3NjcmlwdC5odG1s", true);</script></div></div></div><footer><div class="container beautiful-jekyll-footer"><div class="row"><div class="col-lg-8 col-lg-offset-2 col-md-10 col-md-offset-1"><ul class="list-inline text-center footer-links"><li><a href="https://github.com/blademainer" title="GitHub"><span class="fa-stack fa-lg"><i class="fa fa-circle fa-stack-2x"></i><i class="fa fa-stack-1x fa-inverse fa-github"></i></span></a></li><li><a href="/atom.xml" title="RSS"><span class="fa-stack fa-lg"><i class="fa fa-circle fa-stack-2x"></i><i class="fa fa-stack-1x fa-inverse fa-rss"></i></span></a></li><li><a href="mailto:blademainer@gmail.com" title="Email me"><span class="fa-stack fa-lg"><i class="fa fa-circle fa-stack-2x"></i><i class="fa fa-stack-1x fa-inverse fa-envelope"></i></span></a></li><li><a href="https://www.zhihu.com/people/xiong-ying-qi" title="ZhiHu"><span class="fa-stack fa-lg"><i class="fa fa-circle fa-stack-2x"></i><i class="fa fa-stack-1x fa-inverse fa-link"></i></span></a></li></ul><p class="copyright text-muted">© blademainer • 2017 • <a href="mailto:undefined"></a></p></div></div></div></footer><script src="/js/jquery-1.11.2.min.js"></script><script src="/js/bootstrap.min.js"></script><script src="/js/main.js"></script><script src="/js/highlight.min.js"></script><script>hljs.initHighlightingOnLoad();</script><script type="text/javascript">var _hmt = _hmt || [];
+(function() {
+  var hm = document.createElement("script");
+  hm.src = "//hm.baidu.com/hm.js?401b87cd7ccfbae7934d36a06c2bb321";
+  var s = document.getElementsByTagName("script")[0]; 
+  s.parentNode.insertBefore(hm, s);
+})();</script></body></html>

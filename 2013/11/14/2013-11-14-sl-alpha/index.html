@@ -1,0 +1,38 @@
+<!DOCTYPE html><html lang="zh-Hans"><head><meta charset="utf-8"><meta http-equiv="X-UA-Compatible" content="IE=edge"><meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0"><meta name="author" content="blademainer"><link rel="icon" href="/hexo.png"><title>blademainer</title><meta name="description"><link rel="alternate" type="application/rss+xml" title="blademainer" href="/atom.xml"><link rel="stylesheet" href="//maxcdn.bootstrapcdn.com/font-awesome/4.5.0/css/font-awesome.min.css"><link rel="stylesheet" href="/css/bootstrap.min.css"><link rel="stylesheet" href="/css/main.css"><link rel="stylesheet" href="/css/highlight.css"><link rel="stylesheet" href="//fonts.googleapis.com/css?family=Lora:400,700,400italic,700italic"><link rel="stylesheet" href="//fonts.googleapis.com/css?family=Open+Sans:300italic,400italic,600italic,700italic,800italic,400,300,600,700,800">
+</head><body><nav class="navbar navbar-default navbar-fixed-top navbar-custom"><div class="container-fluid"><div class="navbar-header"><button type="button" data-toggle="collapse" data-target="#main-navbar" class="navbar-toggle"><span class="sr-only">Toggle navigation</span><span class="icon-bar"></span><span class="icon-bar"></span><span class="icon-bar"></span></button><a href="/" class="navbar-brand">blademainer</a></div><div id="main-navbar" class="collapse navbar-collapse"><ul class="nav navbar-nav navbar-right"><li><a href="/archives">Archive</a></li><li><a href="https://github.com/blademainer/blademainer.github.com">Github</a></li><li><a href="/about/">About</a></li></ul></div><div class="avatar-container"><div class="avatar-img-border"><a href="/"><img src="/hexo.png" class="avatar-img"></a></div></div></div></nav><header class="header-section"><div class="intro-header no-img"><div class="container"><div class="row"><div class="col-lg-8 col-lg-offset-2 col-md-10 col-md-offset-1"><div class="post-heading"><h1>css 背景透明解决方案</h1><p class="post-meta">Posted on Nov 14 2013 · <a href="/tags/css/" class="tag post-meta">css</a> · <a href="/tags/html/" class="tag post-meta">html</a> · <a href="/tags/opacity/" class="tag post-meta">opacity</a></p></div></div></div></div></div></header><div class="container"><div class="row"><div class="col-lg-8 col-lg-offset-2 col-md-10 col-md-offset-1"><article role="main" class="blog-post"><p>废话一下：    </p>
+<ol>
+<li><p>通常在网上搜索到的 CSS 透明的代码入下：<br><pre class="css" name="colorcode"><br>.transparent {<br>filter: alpha(opacity=50);/<em> IE6 </em>/<br>-moz-opacity: 0.5;        /<em> firefox </em>/<br>-khtml-opacity: 0.5;      /<em> safari </em>/<br>opacity: 0.5;             /<em> normal </em>/<br>}<br></pre></p>
+<blockquote>
+<p>这段代码可以很轻松地解决透明的问题，只需要更改透明度就好了。</p>
+<a id="more"></a>
+</blockquote>
+</li>
+<li><p>CSS 中的 opactity 是有继承问题的。例如你的 Dom 结构如下：<br><pre class="html" name="colorcode"><br>&lt;div class=”body”&gt;<br>&lt;div class=”cnt”&gt;<br>&lt;/div&gt;<br>&lt;/div&gt;<br></pre><br>假如你为 body 增加了如上 1 的透明样式之后，.body 的确透明了。而这个时候，你会发<br>现 .cnt 的块也变得 50% 透明了。假如你想通过重置样式来达到目的，不妨试试，你的<br>100% 的不透明，将会基于父节点的 50%的，也就是 50％*100%=50% 。</p>
+</li>
+<li><p>常见的解决方法，就是通过兄弟节点来解决继承的问题，并使用 position 属性来改<br>变层次。具体不多说。</p>
+</li>
+</ol>
+<p>解决方案:<br>原理：使用 CSS3 的 rgb，rgba 来解决现代浏览器中的背景透明问题，使用 ie 中的渐变<br>滤镜来解决 ie 中的透明问题。具体代码如下：</p>
+<pre class="css" name="colorcode">
+.sl-alpha {
+    background-color: rgb( 0, 0, 0 );
+    background-color: rgba( 0, 0, 0, 0.3 ); 
+    filter:progid:DXImageTransform.Microsoft.gradient(startColorstr=#88ff0000, endColorstr=#88ff00000);
+    -ms-filter:"progid:DXImageTransform.Microsoft.gradient(startColorstr=#88ff0000, endColorstr=#88ff00000)";
+}
+</pre>
+</article><ul class="pager blog-pager"><li class="previous"><a href="/2013/11/14/2013-11-14-some-github-api/" data-toggle="tooltip" data-placement="top" title="GitHub API v2 笔记">← Previous Post</a></li><li class="next"><a href="/2013/11/14/2013-11-14-mac-wget/" data-toggle="tooltip" data-placement="top" title="mac 上安装 wget">Next Post →</a></li></ul><div id="cloud-tie-wrapper" class="cloud-tie-wrapper"></div><script src="https://img1.cache.netease.com/f2e/tie/yun/sdk/loader.js"></script><script>var cloudTieConfig = {
+    url: document.location.href, 
+    sourceId: "",
+    productKey: "fdb2db38bb5548f6bba8e02165a9f755",
+    target: "cloud-tie-wrapper"
+};
+Tie.loader("aHR0cHM6Ly9hcGkuZ2VudGllLjE2My5jb20vcGMvbGl2ZXNjcmlwdC5odG1s", true);</script><div id="hot-news-wrap" class="hot-news-wrap"></div><script>var yunModuleEnv = true;</script><script src="https://img1.cache.netease.com/f2e/tie/yun/sdk/loader.js"></script><script>var yunTieProductKey = "fdb2db38bb5548f6bba8e02165a9f755";
+var yunHotNewsWrap = "hot-news-wrap";
+Tie.loader("aHR0cHM6Ly9hcGkuZ2VudGllLjE2My5jb20vZXh0ZW5kL2hvdF9uZXdzX3NjcmlwdC5odG1s", true);</script></div></div></div><footer><div class="container beautiful-jekyll-footer"><div class="row"><div class="col-lg-8 col-lg-offset-2 col-md-10 col-md-offset-1"><ul class="list-inline text-center footer-links"><li><a href="https://github.com/blademainer" title="GitHub"><span class="fa-stack fa-lg"><i class="fa fa-circle fa-stack-2x"></i><i class="fa fa-stack-1x fa-inverse fa-github"></i></span></a></li><li><a href="/atom.xml" title="RSS"><span class="fa-stack fa-lg"><i class="fa fa-circle fa-stack-2x"></i><i class="fa fa-stack-1x fa-inverse fa-rss"></i></span></a></li><li><a href="mailto:blademainer@gmail.com" title="Email me"><span class="fa-stack fa-lg"><i class="fa fa-circle fa-stack-2x"></i><i class="fa fa-stack-1x fa-inverse fa-envelope"></i></span></a></li><li><a href="https://www.zhihu.com/people/xiong-ying-qi" title="ZhiHu"><span class="fa-stack fa-lg"><i class="fa fa-circle fa-stack-2x"></i><i class="fa fa-stack-1x fa-inverse fa-link"></i></span></a></li></ul><p class="copyright text-muted">© blademainer • 2017 • <a href="mailto:undefined"></a></p></div></div></div></footer><script src="/js/jquery-1.11.2.min.js"></script><script src="/js/bootstrap.min.js"></script><script src="/js/main.js"></script><script src="/js/highlight.min.js"></script><script>hljs.initHighlightingOnLoad();</script><script type="text/javascript">var _hmt = _hmt || [];
+(function() {
+  var hm = document.createElement("script");
+  hm.src = "//hm.baidu.com/hm.js?401b87cd7ccfbae7934d36a06c2bb321";
+  var s = document.getElementsByTagName("script")[0]; 
+  s.parentNode.insertBefore(hm, s);
+})();</script></body></html>

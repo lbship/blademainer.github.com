@@ -1,0 +1,79 @@
+<!DOCTYPE html><html lang="zh-Hans"><head><meta charset="utf-8"><meta http-equiv="X-UA-Compatible" content="IE=edge"><meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0"><meta name="author" content="blademainer"><link rel="icon" href="/hexo.png"><title>blademainer</title><meta name="description"><link rel="alternate" type="application/rss+xml" title="blademainer" href="/atom.xml"><link rel="stylesheet" href="//maxcdn.bootstrapcdn.com/font-awesome/4.5.0/css/font-awesome.min.css"><link rel="stylesheet" href="/css/bootstrap.min.css"><link rel="stylesheet" href="/css/main.css"><link rel="stylesheet" href="/css/highlight.css"><link rel="stylesheet" href="//fonts.googleapis.com/css?family=Lora:400,700,400italic,700italic"><link rel="stylesheet" href="//fonts.googleapis.com/css?family=Open+Sans:300italic,400italic,600italic,700italic,800italic,400,300,600,700,800">
+</head><body><nav class="navbar navbar-default navbar-fixed-top navbar-custom"><div class="container-fluid"><div class="navbar-header"><button type="button" data-toggle="collapse" data-target="#main-navbar" class="navbar-toggle"><span class="sr-only">Toggle navigation</span><span class="icon-bar"></span><span class="icon-bar"></span><span class="icon-bar"></span></button><a href="/" class="navbar-brand">blademainer</a></div><div id="main-navbar" class="collapse navbar-collapse"><ul class="nav navbar-nav navbar-right"><li><a href="/archives">Archive</a></li><li><a href="https://github.com/blademainer/blademainer.github.com">Github</a></li><li><a href="/about/">About</a></li></ul></div><div class="avatar-container"><div class="avatar-img-border"><a href="/"><img src="/hexo.png" class="avatar-img"></a></div></div></div></nav><header class="header-section"><div class="intro-header no-img"><div class="container"><div class="row"><div class="col-lg-8 col-lg-offset-2 col-md-10 col-md-offset-1"><div class="post-heading"><h1>window 下建立 github 连接</h1><p class="post-meta">Posted on Nov 14 2013 · <a href="/tags/git/" class="tag post-meta">git</a> · <a href="/tags/github/" class="tag post-meta">github</a></p></div></div></div></div></div></header><div class="container"><div class="row"><div class="col-lg-8 col-lg-offset-2 col-md-10 col-md-offset-1"><article role="main" class="blog-post"><p>在 window 下搭建 github 连接。</p>
+<h3 id="前提"><a href="#前提" class="headerlink" title="前提"></a>前提</h3><p>这个前提还是比较简单的，你需要有一个 email，然后在 GitHub 上注册一个账户。</p>
+<h3 id="工具"><a href="#工具" class="headerlink" title="工具"></a>工具</h3><p>在 window 建立 ssh 连接的工具挺多的。GitHub 也有自己的一个工具来帮助用户建立 Git<br>连接–Git。<br>哈哈，<a href="http://code.google.com/p/msysgit/downloads/list" target="_blank" rel="external">这儿下载Git</a>,具体的安装<br>方法参考<a href="http://help.github.com/win-set-up-git/" target="_blank" rel="external">这里</a><br><a id="more"></a></p>
+<h3 id="输入命令，建立连接"><a href="#输入命令，建立连接" class="headerlink" title="输入命令，建立连接"></a>输入命令，建立连接</h3><p>安装好 Git 之后，可别把它丢在一边不理了。这里有一些命令需要你手动输入。</p>
+<ol>
+<li><p>检查是否含有 SSH keys。（如果有的话，直接跳到第 4 步）不要太急哈，你刚刚才注<br>册，怎么会有呢？<br>$ cd ~/.ssh<br>如果你在这里显示 “No such file or dirdectory” 请先跳到第 3 步，然后再跳回第 2 步<br>，挺好玩的哈。</p>
+</li>
+<li><p>备份和删除已经存在的 SSH keys</p>
+<pre><code>$ ls
+//这里大概会显示出你的几个文件，如下：
+config id_rsa id_rsa.pub know_hosts
+$ mkdir key_backup 
+//创建一个备份目录
+$ cp id_rsa* key_backup
+//将 keys 保存到 key_backup, *号表示各种后缀
+$ rm id_rsa*
+//删除啦
+</code></pre></li>
+<li><p>新建一个 SSH keys<br>输入下面的代码哈。到了需要路径的时候，点击 enter 就好。</p>
+<pre><code>$ ssh-keygen -t rsa -C &quot;your_email@yourmail.com&quot;
+//引号部分是你的刚刚申请的 github 帐号的邮箱噢,这个时候会输出如下内容：
+Generating public/private rsa key pair.
+Enter file in which to save the key
+//让你输入要保存 key 的路径
+(/users/your_user_directory/.ssh/id_rsa):
+//你只需要 enter 就好
+</code></pre><p>接着还要输入 ssh 密码</p>
+<pre><code>Enter passphrase (empty for no passphrase):
+//输入密码
+Enter same passphrase again:
+//再次输入密码
+</code></pre><p>紧接着你会看到如下的输出：</p>
+<pre><code>Your identification has been saved in
+/Users/your_user_directory/.ssh/id_rsa.
+Your public key has been saved in
+/User/your_user_directory/.ssh/id_rsa.pub.
+The key fingerpring is:
+01:0f:f4:3b:ca:85:d6:17:a1:7d:f0:68:9d:f0:a2:db user_name@username.com
++--[ RSA 2048]----+
+|                 |
+|                 |
+|                 |
+|                 |
+|                 |
++-----------------+
+</code></pre><p>注：是不是你没看到下面那个框框呢？只看到一串这样格式的字符01:0f:f4…?这没关系，<br>待会你按照下面说的做就好了。</p>
+</li>
+<li><p>把 SSH key 加到你的 GitHub<br>嘿嘿，登录 GitHub，然后点击 “Account Setting” &gt; “SSH Public Keys” &gt; “Add another public key”<br>然后打开 id_rsa.pub 文件（用 txt 打开就好，或者 vim ）。这就是你的公钥。<br>注：id_rsa.pub 的路径是 C:\Documents and Settings\Administrator.ssh\ ，如果你刚<br>刚按上面的做的话。</p>
+</li>
+<li><p>测试啦<br>现在可以尝试使用 SSH 连接到 GitHub 啦。输入下面命令：</p>
+<pre><code>$ ssh -T git@github.com
+</code></pre><p>接着会出现这样的代码：</p>
+<pre><code>The authenticity of host &#39;github.com(207.97.227.239)&#39; can not be established.
+RSA key fingerprint is 10:10:10:....
+//省略后面那一串
+Are you sure you want to connitnue connecting(yes/no)?
+</code></pre><p>别当心，输入 yes，成功的话，会显示这样：</p>
+<pre><code>Hi username! ...
+</code></pre><p>如果显示 fail 的话，请检查一下你刚刚在 GitHub 上的公钥，是否少了空格或者换行之类<br>的。</p>
+</li>
+</ol>
+<h3 id="后续的工作"><a href="#后续的工作" class="headerlink" title="后续的工作"></a>后续的工作</h3><p>现在你已经可以通过使用 Git 设置 SSH keys 来连接到你的 GitHub 上面了。接下来你可<br>以设置你的个人信息，token 或者其他等。这里不列举了。<br>万事开头难，加油。</p>
+<h3 id="参考文章"><a href="#参考文章" class="headerlink" title="参考文章"></a>参考文章</h3><p><a href="http://help.github.com/win-set-up-git/" target="_blank" rel="external">GitHub 上的帮助文档</a></p>
+</article><ul class="pager blog-pager"><li class="previous"><a href="/2013/11/14/2013-11-14-github-notes/" data-toggle="tooltip" data-placement="top" title="Git/SVN 常用命令笔记">← Previous Post</a></li><li class="next"><a href="/2013/11/14/2013-11-14-some-github-api/" data-toggle="tooltip" data-placement="top" title="GitHub API v2 笔记">Next Post →</a></li></ul><div id="cloud-tie-wrapper" class="cloud-tie-wrapper"></div><script src="https://img1.cache.netease.com/f2e/tie/yun/sdk/loader.js"></script><script>var cloudTieConfig = {
+    url: document.location.href, 
+    sourceId: "",
+    productKey: "fdb2db38bb5548f6bba8e02165a9f755",
+    target: "cloud-tie-wrapper"
+};
+Tie.loader("aHR0cHM6Ly9hcGkuZ2VudGllLjE2My5jb20vcGMvbGl2ZXNjcmlwdC5odG1s", true);</script><div id="hot-news-wrap" class="hot-news-wrap"></div><script>var yunModuleEnv = true;</script><script src="https://img1.cache.netease.com/f2e/tie/yun/sdk/loader.js"></script><script>var yunTieProductKey = "fdb2db38bb5548f6bba8e02165a9f755";
+var yunHotNewsWrap = "hot-news-wrap";
+Tie.loader("aHR0cHM6Ly9hcGkuZ2VudGllLjE2My5jb20vZXh0ZW5kL2hvdF9uZXdzX3NjcmlwdC5odG1s", true);</script></div></div></div><footer><div class="container beautiful-jekyll-footer"><div class="row"><div class="col-lg-8 col-lg-offset-2 col-md-10 col-md-offset-1"><ul class="list-inline text-center footer-links"><li><a href="https://github.com/blademainer" title="GitHub"><span class="fa-stack fa-lg"><i class="fa fa-circle fa-stack-2x"></i><i class="fa fa-stack-1x fa-inverse fa-github"></i></span></a></li><li><a href="/atom.xml" title="RSS"><span class="fa-stack fa-lg"><i class="fa fa-circle fa-stack-2x"></i><i class="fa fa-stack-1x fa-inverse fa-rss"></i></span></a></li><li><a href="mailto:blademainer@gmail.com" title="Email me"><span class="fa-stack fa-lg"><i class="fa fa-circle fa-stack-2x"></i><i class="fa fa-stack-1x fa-inverse fa-envelope"></i></span></a></li><li><a href="https://www.zhihu.com/people/xiong-ying-qi" title="ZhiHu"><span class="fa-stack fa-lg"><i class="fa fa-circle fa-stack-2x"></i><i class="fa fa-stack-1x fa-inverse fa-link"></i></span></a></li></ul><p class="copyright text-muted">© blademainer • 2017 • <a href="mailto:undefined"></a></p></div></div></div></footer><script src="/js/jquery-1.11.2.min.js"></script><script src="/js/bootstrap.min.js"></script><script src="/js/main.js"></script><script src="/js/highlight.min.js"></script><script>hljs.initHighlightingOnLoad();</script><script type="text/javascript">var _hmt = _hmt || [];
+(function() {
+  var hm = document.createElement("script");
+  hm.src = "//hm.baidu.com/hm.js?401b87cd7ccfbae7934d36a06c2bb321";
+  var s = document.getElementsByTagName("script")[0]; 
+  s.parentNode.insertBefore(hm, s);
+})();</script></body></html>

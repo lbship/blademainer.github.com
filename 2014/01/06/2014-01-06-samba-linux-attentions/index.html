@@ -1,0 +1,51 @@
+<!DOCTYPE html><html lang="zh-Hans"><head><meta charset="utf-8"><meta http-equiv="X-UA-Compatible" content="IE=edge"><meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0"><meta name="author" content="blademainer"><link rel="icon" href="/hexo.png"><title>blademainer</title><meta name="description"><link rel="alternate" type="application/rss+xml" title="blademainer" href="/atom.xml"><link rel="stylesheet" href="//maxcdn.bootstrapcdn.com/font-awesome/4.5.0/css/font-awesome.min.css"><link rel="stylesheet" href="/css/bootstrap.min.css"><link rel="stylesheet" href="/css/main.css"><link rel="stylesheet" href="/css/highlight.css"><link rel="stylesheet" href="//fonts.googleapis.com/css?family=Lora:400,700,400italic,700italic"><link rel="stylesheet" href="//fonts.googleapis.com/css?family=Open+Sans:300italic,400italic,600italic,700italic,800italic,400,300,600,700,800">
+</head><body><nav class="navbar navbar-default navbar-fixed-top navbar-custom"><div class="container-fluid"><div class="navbar-header"><button type="button" data-toggle="collapse" data-target="#main-navbar" class="navbar-toggle"><span class="sr-only">Toggle navigation</span><span class="icon-bar"></span><span class="icon-bar"></span><span class="icon-bar"></span></button><a href="/" class="navbar-brand">blademainer</a></div><div id="main-navbar" class="collapse navbar-collapse"><ul class="nav navbar-nav navbar-right"><li><a href="/archives">Archive</a></li><li><a href="https://github.com/blademainer/blademainer.github.com">Github</a></li><li><a href="/about/">About</a></li></ul></div><div class="avatar-container"><div class="avatar-img-border"><a href="/"><img src="/hexo.png" class="avatar-img"></a></div></div></div></nav><header class="header-section"><div class="intro-header no-img"><div class="container"><div class="row"><div class="col-lg-8 col-lg-offset-2 col-md-10 col-md-offset-1"><div class="post-heading"><h1>Linux安装Samba文件共享服务器</h1><p class="post-meta">Posted on Jan 6 2014 · <a href="/tags/Samba/" class="tag post-meta">Samba</a> · <a href="/tags/linux/" class="tag post-meta">linux</a></p></div></div></div></div></div></header><div class="container"><div class="row"><div class="col-lg-8 col-lg-offset-2 col-md-10 col-md-offset-1"><article role="main" class="blog-post"><p>#Linux安装Samba文件共享服务器<br>Samba相对于Windows服务器来说具有更灵活的配置、高效等特点。个人认为是共享服务器的最佳选择。</p>
+<a id="more"></a>
+<h1 id="安装samba："><a href="#安装samba：" class="headerlink" title="安装samba："></a>安装samba：</h1><pre><code class="bash">yum install samba
+</code></pre>
+<p>ubuntu下yum对应命令为：</p>
+<pre><code class="bash">apt-get install samba
+</code></pre>
+<h1 id="samba主要配置文件在-etc-samba-smb-conf中"><a href="#samba主要配置文件在-etc-samba-smb-conf中" class="headerlink" title="samba主要配置文件在/etc/samba/smb.conf中"></a>samba主要配置文件在/etc/samba/smb.conf中</h1><pre><code class="bash">[global]
+        realm = 192.168.0.2
+        netbios name = SAMBA-SERVER
+        netbios aliases = SAMBA-SERVER
+        server string = Samba-Server
+        security = SHARE
+        log file = /var/log/samba/%m.log
+        max log size = 50
+        os level = 0
+        wins proxy = Yes
+        wins support = Yes
+        idmap config * : backend = tdb
+        hosts allow = 127., 192.
+        cups options = raw
+
+[test]
+        comment = test
+        path = /home/share/test
+        read only = No
+        create mask = 0777
+        directory mask = 0777
+</code></pre>
+<h1 id="注意"><a href="#注意" class="headerlink" title="注意"></a>注意</h1><p>其中比较要注意的是global中的security和hosts allow两个选项：</p>
+<ul>
+<li>security代表验证权限的机制，我一般使用share和user级别，这两种方式其实没多大区别~无非是先登录再查看还是先查看再登录的区别而已（注意：Linux的目录）</li>
+<li>如果服务器共享了哪些文件夹是不怕公布并且多个部门使用同一个服务器以及各部门需要相互查看的话，建议使用share的方式，这样会极大的方便公司同事在windows中切换帐号。</li>
+<li>hosts allow代表了哪些前缀的ip地址能访问服务器。</li>
+</ul>
+</article><ul class="pager blog-pager"><li class="previous"><a href="/2015/10/14/2014-06-30-spring-mvc-jackson-enhance/" data-toggle="tooltip" data-placement="top" title="最终版解决方案：json循环问题（使用javassist增强）：Spring MVC中使用jackson的MixInAnnotations方法动态过滤JSON字段">← Previous Post</a></li><li class="next"><a href="/2014/01/04/2014-01-04-linux-backup-shell/" data-toggle="tooltip" data-placement="top" title="Linux使用shell脚本定时备份文件（夹）并删除一定日期之前的备份和日志">Next Post →</a></li></ul><div id="cloud-tie-wrapper" class="cloud-tie-wrapper"></div><script src="https://img1.cache.netease.com/f2e/tie/yun/sdk/loader.js"></script><script>var cloudTieConfig = {
+    url: document.location.href, 
+    sourceId: "",
+    productKey: "fdb2db38bb5548f6bba8e02165a9f755",
+    target: "cloud-tie-wrapper"
+};
+Tie.loader("aHR0cHM6Ly9hcGkuZ2VudGllLjE2My5jb20vcGMvbGl2ZXNjcmlwdC5odG1s", true);</script><div id="hot-news-wrap" class="hot-news-wrap"></div><script>var yunModuleEnv = true;</script><script src="https://img1.cache.netease.com/f2e/tie/yun/sdk/loader.js"></script><script>var yunTieProductKey = "fdb2db38bb5548f6bba8e02165a9f755";
+var yunHotNewsWrap = "hot-news-wrap";
+Tie.loader("aHR0cHM6Ly9hcGkuZ2VudGllLjE2My5jb20vZXh0ZW5kL2hvdF9uZXdzX3NjcmlwdC5odG1s", true);</script></div></div></div><footer><div class="container beautiful-jekyll-footer"><div class="row"><div class="col-lg-8 col-lg-offset-2 col-md-10 col-md-offset-1"><ul class="list-inline text-center footer-links"><li><a href="https://github.com/blademainer" title="GitHub"><span class="fa-stack fa-lg"><i class="fa fa-circle fa-stack-2x"></i><i class="fa fa-stack-1x fa-inverse fa-github"></i></span></a></li><li><a href="/atom.xml" title="RSS"><span class="fa-stack fa-lg"><i class="fa fa-circle fa-stack-2x"></i><i class="fa fa-stack-1x fa-inverse fa-rss"></i></span></a></li><li><a href="mailto:blademainer@gmail.com" title="Email me"><span class="fa-stack fa-lg"><i class="fa fa-circle fa-stack-2x"></i><i class="fa fa-stack-1x fa-inverse fa-envelope"></i></span></a></li><li><a href="https://www.zhihu.com/people/xiong-ying-qi" title="ZhiHu"><span class="fa-stack fa-lg"><i class="fa fa-circle fa-stack-2x"></i><i class="fa fa-stack-1x fa-inverse fa-link"></i></span></a></li></ul><p class="copyright text-muted">© blademainer • 2017 • <a href="mailto:undefined"></a></p></div></div></div></footer><script src="/js/jquery-1.11.2.min.js"></script><script src="/js/bootstrap.min.js"></script><script src="/js/main.js"></script><script src="/js/highlight.min.js"></script><script>hljs.initHighlightingOnLoad();</script><script type="text/javascript">var _hmt = _hmt || [];
+(function() {
+  var hm = document.createElement("script");
+  hm.src = "//hm.baidu.com/hm.js?401b87cd7ccfbae7934d36a06c2bb321";
+  var s = document.getElementsByTagName("script")[0]; 
+  s.parentNode.insertBefore(hm, s);
+})();</script></body></html>

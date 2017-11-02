@@ -1,0 +1,117 @@
+<!DOCTYPE html><html lang="zh-Hans"><head><meta charset="utf-8"><meta http-equiv="X-UA-Compatible" content="IE=edge"><meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0"><meta name="author" content="blademainer"><link rel="icon" href="/hexo.png"><title>blademainer</title><meta name="description"><link rel="alternate" type="application/rss+xml" title="blademainer" href="/atom.xml"><link rel="stylesheet" href="//maxcdn.bootstrapcdn.com/font-awesome/4.5.0/css/font-awesome.min.css"><link rel="stylesheet" href="/css/bootstrap.min.css"><link rel="stylesheet" href="/css/main.css"><link rel="stylesheet" href="/css/highlight.css"><link rel="stylesheet" href="//fonts.googleapis.com/css?family=Lora:400,700,400italic,700italic"><link rel="stylesheet" href="//fonts.googleapis.com/css?family=Open+Sans:300italic,400italic,600italic,700italic,800italic,400,300,600,700,800">
+</head><body><nav class="navbar navbar-default navbar-fixed-top navbar-custom"><div class="container-fluid"><div class="navbar-header"><button type="button" data-toggle="collapse" data-target="#main-navbar" class="navbar-toggle"><span class="sr-only">Toggle navigation</span><span class="icon-bar"></span><span class="icon-bar"></span><span class="icon-bar"></span></button><a href="/" class="navbar-brand">blademainer</a></div><div id="main-navbar" class="collapse navbar-collapse"><ul class="nav navbar-nav navbar-right"><li><a href="/archives">Archive</a></li><li><a href="https://github.com/blademainer/blademainer.github.com">Github</a></li><li><a href="/about/">About</a></li></ul></div><div class="avatar-container"><div class="avatar-img-border"><a href="/"><img src="/hexo.png" class="avatar-img"></a></div></div></div></nav><header class="header-section"><div class="intro-header no-img"><div class="container"><div class="row"><div class="col-lg-8 col-lg-offset-2 col-md-10 col-md-offset-1"><div class="post-heading"><h1>Linux使用shell脚本定时备份文件（夹）并删除一定日期之前的备份和日志</h1><p class="post-meta">Posted on Jan 4 2014 · <a href="/tags/shell/" class="tag post-meta">shell</a> · <a href="/tags/Linux/" class="tag post-meta">Linux</a></p></div></div></div></div></div></header><div class="container"><div class="row"><div class="col-lg-8 col-lg-offset-2 col-md-10 col-md-offset-1"><article role="main" class="blog-post"><h1 id="备份的原理"><a href="#备份的原理" class="headerlink" title="备份的原理"></a>备份的原理</h1><p>使用Linux的Cron程序定时执行该脚本从而达到备份和删除备份历史的目的。</p>
+<h1 id="主要参数"><a href="#主要参数" class="headerlink" title="主要参数"></a>主要参数</h1><p>脚本主要需要设置参数有三个：</p>
+<ul>
+<li>ORIGIN_FOLDER：要备份的目录，必须以\结尾</li>
+<li>DES_FOLDER：备份文件存储路径（可以是网络路径，前提是必须要有权限管理该路径下的文件夹）</li>
+<li>DAYS_AGO：该参数表示要删除多少天之前的备份（比如今天是2012年12月31日，那么20121221的文件不会被删除，20121220或比之小的文件夹将会被删除）<a id="more"></a>
+</li>
+</ul>
+<h1 id="脚本"><a href="#脚本" class="headerlink" title="脚本"></a>脚本</h1><p>BackUpTask.shell</p>
+<pre><code class="bash">#!/bin/sh
+#---------------------------------------------------------------------
+#    shell自动备份文件夹同时检查一定日期前的文件夹并删除
+#    部署好本脚本后应当在linux中设置cron自动执行：
+#    1、在linux的/etc/cron.d/目录下新建空文件
+#    2、使用&quot;crontab -e&quot;编辑新的定时任务并保存
+#    3、chkconfig crond on
+#    （注意：在cron模式下文件操作必须使用绝对路径）
+#                                                        --by: Blademainer
+#---------------------------------------------------------------------
+#设置要备份的目录，多个文件夹以逗号分隔
+ORIGIN_FOLDER=test,testlog
+#设置备份文件的存储目录，可以是绝对路径
+DES_FOLDER=bak
+#设置删除多少天之前的备份
+DAYS_AGO=10
+
+
+#定义日期变量，时间戳的单位以秒为单位
+SECOND=1
+MINUTE=$((60*$SECOND))
+HOUR=$((60*$MINUTE))
+DAY=$((24*$HOUR))
+WEEK=$((7*$DAY))
+
+#time1=$(($(date +%s -d &#39;2010-01-01&#39;) - $(date +%s -d &#39;2009-01-01&#39;)));# 计算时间戳，以秒为单位
+#time2=$(($(date +%s -d &#39;2013-12-30 11:57:39&#39;)));# 计算时间戳，以秒为单位
+#time3=$(($(date +%s -d &quot;$(date +&#39;%Y-%m-%d %H:%M:%S&#39;)&quot;)));# 计算时间戳，以秒为单位
+#echo $time3
+#echo $time2
+#echo $(($time1/$DAY))
+
+#当前日期的字符串表达形式
+NOW=$(date +&#39;%Y-%m-%d_%H%M%S&#39;)
+#echo $NOW
+#TEN_DAYS_AGO=$(($(date -d &#39;-10 day&#39; &quot;+%Y%m%d%H%M%S&quot;)))
+#echo 十天之前$TEN_DAYS_AGO
+
+#计算当前时间的时间戳表达方法
+TIME_NOW=$(($(date +%s -d &quot;$(date +&#39;%Y-%m-%d %H:%M:%S&#39;)&quot;)))
+
+SECONDS_OF_DAYS_AGO=$(($DAYS_AGO * $DAY))
+#计算指定天数前的时间戳表达方法
+TIME_AGO=$(($TIME_NOW - $SECONDS_OF_DAYS_AGO))
+#echo $TIME_NOW
+#echo TIME_AGO============$TIME_AGO
+
+
+
+#判断传入的日期是否在设置的日期之前
+function isDaysBefore()
+{
+    DATE=$(($(date +%s -d $1)))
+    if [[ $DATE &lt; $TIME_AGO ]] 
+    then
+        echo 1
+    else
+        echo 0
+    fi
+}
+
+#检验文件夹
+if [ ! -d &quot;$DES_FOLDER&quot; ]; then  
+    echo `mkdir $DES_FOLDER`
+fi
+
+DES_PATH=$DES_FOLDER/$NOW/
+if [ ! -d &quot;$DES_PATH&quot; ]; then  
+    echo `mkdir $DES_PATH`
+fi
+
+if [ ! -f &quot;$DES_FOLDER/$NOW/$NOW.log&quot; ]; then  
+    echo `touch $DES_FOLDER/$NOW/$NOW.log`
+fi
+
+#拷贝文件夹
+var=`echo &quot;$ORIGIN_FOLDER&quot;|awk -F &#39;,&#39; &#39;{print $0}&#39; | sed &quot;s/,/ /g&quot;`
+for VAR_ORIGIN_FOLDER in $var; do
+    command=`cp -rf $VAR_ORIGIN_FOLDER $DES_PATH`
+done
+
+
+#删除备份文件夹
+for FOLDER in `ls $DES_FOLDER`; do
+    #截取年月日
+    folder_date=`expr substr $FOLDER 1 10`
+    if [[ $(isDaysBefore $folder_date) == 1 ]]
+    then
+        echo `rm -fr $DES_FOLDER/$FOLDER`
+    fi
+done
+</code></pre>
+</article><ul class="pager blog-pager"><li class="previous"><a href="/2014/01/06/2014-01-06-samba-linux-attentions/" data-toggle="tooltip" data-placement="top" title="Linux安装Samba文件共享服务器">← Previous Post</a></li><li class="next"><a href="/2014/01/04/2014-01-04-windows-backup-bat/" data-toggle="tooltip" data-placement="top" title="Windows使用bat脚本定时备份文件（夹）并删除一定日期之前的备份和日志">Next Post →</a></li></ul><div id="cloud-tie-wrapper" class="cloud-tie-wrapper"></div><script src="https://img1.cache.netease.com/f2e/tie/yun/sdk/loader.js"></script><script>var cloudTieConfig = {
+    url: document.location.href, 
+    sourceId: "",
+    productKey: "fdb2db38bb5548f6bba8e02165a9f755",
+    target: "cloud-tie-wrapper"
+};
+Tie.loader("aHR0cHM6Ly9hcGkuZ2VudGllLjE2My5jb20vcGMvbGl2ZXNjcmlwdC5odG1s", true);</script><div id="hot-news-wrap" class="hot-news-wrap"></div><script>var yunModuleEnv = true;</script><script src="https://img1.cache.netease.com/f2e/tie/yun/sdk/loader.js"></script><script>var yunTieProductKey = "fdb2db38bb5548f6bba8e02165a9f755";
+var yunHotNewsWrap = "hot-news-wrap";
+Tie.loader("aHR0cHM6Ly9hcGkuZ2VudGllLjE2My5jb20vZXh0ZW5kL2hvdF9uZXdzX3NjcmlwdC5odG1s", true);</script></div></div></div><footer><div class="container beautiful-jekyll-footer"><div class="row"><div class="col-lg-8 col-lg-offset-2 col-md-10 col-md-offset-1"><ul class="list-inline text-center footer-links"><li><a href="https://github.com/blademainer" title="GitHub"><span class="fa-stack fa-lg"><i class="fa fa-circle fa-stack-2x"></i><i class="fa fa-stack-1x fa-inverse fa-github"></i></span></a></li><li><a href="/atom.xml" title="RSS"><span class="fa-stack fa-lg"><i class="fa fa-circle fa-stack-2x"></i><i class="fa fa-stack-1x fa-inverse fa-rss"></i></span></a></li><li><a href="mailto:blademainer@gmail.com" title="Email me"><span class="fa-stack fa-lg"><i class="fa fa-circle fa-stack-2x"></i><i class="fa fa-stack-1x fa-inverse fa-envelope"></i></span></a></li><li><a href="https://www.zhihu.com/people/xiong-ying-qi" title="ZhiHu"><span class="fa-stack fa-lg"><i class="fa fa-circle fa-stack-2x"></i><i class="fa fa-stack-1x fa-inverse fa-link"></i></span></a></li></ul><p class="copyright text-muted">© blademainer • 2017 • <a href="mailto:undefined"></a></p></div></div></div></footer><script src="/js/jquery-1.11.2.min.js"></script><script src="/js/bootstrap.min.js"></script><script src="/js/main.js"></script><script src="/js/highlight.min.js"></script><script>hljs.initHighlightingOnLoad();</script><script type="text/javascript">var _hmt = _hmt || [];
+(function() {
+  var hm = document.createElement("script");
+  hm.src = "//hm.baidu.com/hm.js?401b87cd7ccfbae7934d36a06c2bb321";
+  var s = document.getElementsByTagName("script")[0]; 
+  s.parentNode.insertBefore(hm, s);
+})();</script></body></html>

@@ -1,0 +1,183 @@
+<!DOCTYPE html><html lang="zh-Hans"><head><meta charset="utf-8"><meta http-equiv="X-UA-Compatible" content="IE=edge"><meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0"><meta name="author" content="blademainer"><link rel="icon" href="/hexo.png"><title>blademainer</title><meta name="description"><link rel="alternate" type="application/rss+xml" title="blademainer" href="/atom.xml"><link rel="stylesheet" href="//maxcdn.bootstrapcdn.com/font-awesome/4.5.0/css/font-awesome.min.css"><link rel="stylesheet" href="/css/bootstrap.min.css"><link rel="stylesheet" href="/css/main.css"><link rel="stylesheet" href="/css/highlight.css"><link rel="stylesheet" href="//fonts.googleapis.com/css?family=Lora:400,700,400italic,700italic"><link rel="stylesheet" href="//fonts.googleapis.com/css?family=Open+Sans:300italic,400italic,600italic,700italic,800italic,400,300,600,700,800">
+</head><body><nav class="navbar navbar-default navbar-fixed-top navbar-custom"><div class="container-fluid"><div class="navbar-header"><button type="button" data-toggle="collapse" data-target="#main-navbar" class="navbar-toggle"><span class="sr-only">Toggle navigation</span><span class="icon-bar"></span><span class="icon-bar"></span><span class="icon-bar"></span></button><a href="/" class="navbar-brand">blademainer</a></div><div id="main-navbar" class="collapse navbar-collapse"><ul class="nav navbar-nav navbar-right"><li><a href="/archives">Archive</a></li><li><a href="https://github.com/blademainer/blademainer.github.com">Github</a></li><li><a href="/about/">About</a></li></ul></div><div class="avatar-container"><div class="avatar-img-border"><a href="/"><img src="/hexo.png" class="avatar-img"></a></div></div></div></nav><header class="header-section"><div class="intro-header no-img"><div class="container"><div class="row"><div class="col-lg-8 col-lg-offset-2 col-md-10 col-md-offset-1"><div class="post-heading"><h1>java分段锁示例</h1><p class="post-meta">Posted on Apr 18 2016 · <a href="/tags/java/" class="tag post-meta">java</a> · <a href="/tags/spring/" class="tag post-meta">spring</a> · <a href="/tags/segment/" class="tag post-meta">segment</a> · <a href="/tags/lock/" class="tag post-meta">lock</a> · <a href="/tags/ReentrantLock/" class="tag post-meta">ReentrantLock</a> · <a href="/tags/锁/" class="tag post-meta">锁</a> · <a href="/tags/分段锁/" class="tag post-meta">分段锁</a></p></div></div></div></div></div></header><div class="container"><div class="row"><div class="col-lg-8 col-lg-offset-2 col-md-10 col-md-offset-1"><article role="main" class="blog-post"><h1 id="Why"><a href="#Why" class="headerlink" title="Why"></a>Why</h1><p>读ConcurrentHashMap的时候，我们遇到的一个很大的概念就是<code>Segment</code>（java8之后只有在调用writeObject方法的方法的时候才会用到segment），该类继承了<code>ReentrantLock</code>，用于实现分段锁（乐观锁）。处于心痒痒的目的，我也尝试写了个简陋版的分段锁。</p>
+<h1 id="How"><a href="#How" class="headerlink" title="How"></a>How</h1><p>该Demo实现的比较简单：根据key获取或者创建Lock（获取锁的时候使用<code>double check</code>），然后使用该锁来同步put或者read（ConcurrentHashMap的读操作使用的volatile，这里不深入）。不足之处还请指正~</p>
+<h1 id="What"><a href="#What" class="headerlink" title="What"></a>What</h1><p>java实现： <a href="https://github.com/blademainer/java-demo/blob/master/src/main/java/com/xiongyingqi/concurrent/MultipleSegmentLock.java" target="_blank" rel="external">github</a></p>
+<a id="more"></a>
+<pre><code class="java">package com.xiongyingqi.concurrent;
+
+import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.locks.Lock;
+import java.util.concurrent.locks.ReentrantLock;
+
+/**
+ * @author xiongyingqi
+ * @version 2016-04-18 16:51
+ */
+public class MultipleSegmentLock {
+    private Map&lt;String, ReentrantLock&gt; lockMap = new ConcurrentHashMap&lt;String, ReentrantLock&gt;();
+
+    public void write(String key, String value) {
+        Lock lock = checkLock(key);
+        lock.lock();
+        try {
+            System.out.println(&quot;writing... &quot; + key + &quot;=&quot; + value);
+            try {
+                //                Random random = new Random();
+                //                long time = random.nextInt(10) + 10;
+                //                Thread.sleep(time);
+                Thread.sleep(10L);
+            } catch (InterruptedException e) {
+                e.printStackTrace();
+            }
+            System.out.println(&quot;write complete... &quot; + key + &quot;=&quot; + value);
+        } finally {
+            lock.unlock();
+        }
+    }
+
+    public void read(String key) {
+        Lock lock = checkLock(key);
+        lock.lock();
+        try {
+            System.out.println(&quot;reading... &quot; + key);
+            try {
+                Thread.sleep(10L);
+            } catch (InterruptedException e) {
+                e.printStackTrace();
+            }
+            System.out.println(&quot;read complete... &quot; + key);
+        } finally {
+            lock.unlock();
+        }
+    }
+
+    /**
+     * Getting the lock of the key. Create a {@link ReentrantLock} when not exists.
+     * &lt;p&gt;Implements with double check&lt;/p&gt;
+     *
+     * @param key Segment by the key
+     * @return {@link ReentrantLock}
+     */
+    private Lock checkLock(String key) {
+        ReentrantLock reentrantLock = lockMap.get(key);
+        if (reentrantLock == null) {
+            synchronized (this) {
+                reentrantLock = lockMap.get(key);
+                if (reentrantLock == null) {
+                    reentrantLock = new ReentrantLock();
+                    System.out.println(
+                            &quot;lock for &quot; + key + &quot; not exists! so create a lock: &quot; + reentrantLock);
+                    lockMap.put(key, reentrantLock);
+                    return reentrantLock;
+                }
+                return reentrantLock;
+            }
+        }
+        return reentrantLock;
+    }
+
+    public static void main(String[] args) {
+        MultipleSegmentLock multipleSegmentLock = new MultipleSegmentLock();
+        new Thread(() -&gt; {
+            for (int i = 0; i &lt; 100; i++) {
+                multipleSegmentLock.write(&quot;key&quot;,
+                        &quot;&quot; + i); // synchronous with &#39;key&#39; and asynchronous with &#39;key2&#39;
+            }
+        }).start();
+        new Thread(() -&gt; {
+            for (int i = 100; i &lt; 200; i++) {
+                multipleSegmentLock.write(&quot;key&quot;,
+                        &quot;&quot; + i); // synchronous with &#39;key&#39; and asynchronous with &#39;key2&#39;
+            }
+        }).start();
+        new Thread(() -&gt; {
+            for (int i = 0; i &lt; 100; i++) {
+                multipleSegmentLock.write(&quot;key2&quot;,
+                        &quot;&quot; + i); // synchronous with &#39;key2&#39; and asynchronous with &#39;key&#39;
+            }
+        }).start();
+        new Thread(() -&gt; {
+            for (int i = 100; i &lt; 200; i++) {
+                multipleSegmentLock.write(&quot;key2&quot;,
+                        &quot;&quot; + i); // synchronous with &#39;key2&#39; and asynchronous with &#39;key&#39;
+            }
+        }).start();
+        new Thread(() -&gt; {
+            for (int i = 0; i &lt; 100; i++) {
+                multipleSegmentLock.read(&quot;key&quot;);
+            }
+        }).start();
+
+        // Console out may be:
+        // ----------------------------------------------------
+        //lock for key not exists! so create a lock: null
+        //lock for key2 not exists! so create a lock: null
+        //writing... key=0
+        //writing... key2=0
+        //write complete... key=0
+        //write complete... key2=0
+        //writing... key=1
+        //writing... key2=1
+        //write complete... key=1
+        //write complete... key2=1
+        //writing... key2=2
+        //writing... key=2
+        //write complete... key2=2
+        //write complete... key=2
+        //writing... key2=3
+        //writing... key=3
+        //write complete... key2=3
+        //write complete... key=3
+        //... ...
+        //reading... key
+        //write complete... key2=49
+        //read complete... key
+        //reading... key
+        //writing... key2=50
+        //read complete... key
+        //write complete... key2=50
+        //reading... key
+        //writing... key2=51
+        //read complete... key
+        //write complete... key2=51
+        //reading... key
+        //writing... key2=109
+        //read complete... key
+        //write complete... key2=109
+        //reading... key
+        //writing... key2=110
+        //read complete... key
+        //... ...
+        //writing... key=194
+        //write complete... key=194
+        //writing... key=195
+        //write complete... key=195
+        //writing... key=196
+        //write complete... key=196
+        //writing... key=197
+        //write complete... key=197
+        //writing... key=198
+        //write complete... key=198
+        //writing... key=199
+        //write complete... key=199
+        // ----------------------------------------------------
+    }
+
+}
+</code></pre>
+</article><ul class="pager blog-pager"><li class="previous"><a href="/2016/09/12/shell-notes/" data-toggle="tooltip" data-placement="top" title="shell脚本命令备忘">← Previous Post</a></li><li class="next"><a href="/2016/03/29/jackson-deserialize-collection/" data-toggle="tooltip" data-placement="top" title="Jackson解析json为指定泛型的集合">Next Post →</a></li></ul><div id="cloud-tie-wrapper" class="cloud-tie-wrapper"></div><script src="https://img1.cache.netease.com/f2e/tie/yun/sdk/loader.js"></script><script>var cloudTieConfig = {
+    url: document.location.href, 
+    sourceId: "",
+    productKey: "fdb2db38bb5548f6bba8e02165a9f755",
+    target: "cloud-tie-wrapper"
+};
+Tie.loader("aHR0cHM6Ly9hcGkuZ2VudGllLjE2My5jb20vcGMvbGl2ZXNjcmlwdC5odG1s", true);</script><div id="hot-news-wrap" class="hot-news-wrap"></div><script>var yunModuleEnv = true;</script><script src="https://img1.cache.netease.com/f2e/tie/yun/sdk/loader.js"></script><script>var yunTieProductKey = "fdb2db38bb5548f6bba8e02165a9f755";
+var yunHotNewsWrap = "hot-news-wrap";
+Tie.loader("aHR0cHM6Ly9hcGkuZ2VudGllLjE2My5jb20vZXh0ZW5kL2hvdF9uZXdzX3NjcmlwdC5odG1s", true);</script></div></div></div><footer><div class="container beautiful-jekyll-footer"><div class="row"><div class="col-lg-8 col-lg-offset-2 col-md-10 col-md-offset-1"><ul class="list-inline text-center footer-links"><li><a href="https://github.com/blademainer" title="GitHub"><span class="fa-stack fa-lg"><i class="fa fa-circle fa-stack-2x"></i><i class="fa fa-stack-1x fa-inverse fa-github"></i></span></a></li><li><a href="/atom.xml" title="RSS"><span class="fa-stack fa-lg"><i class="fa fa-circle fa-stack-2x"></i><i class="fa fa-stack-1x fa-inverse fa-rss"></i></span></a></li><li><a href="mailto:blademainer@gmail.com" title="Email me"><span class="fa-stack fa-lg"><i class="fa fa-circle fa-stack-2x"></i><i class="fa fa-stack-1x fa-inverse fa-envelope"></i></span></a></li><li><a href="https://www.zhihu.com/people/xiong-ying-qi" title="ZhiHu"><span class="fa-stack fa-lg"><i class="fa fa-circle fa-stack-2x"></i><i class="fa fa-stack-1x fa-inverse fa-link"></i></span></a></li></ul><p class="copyright text-muted">© blademainer • 2017 • <a href="mailto:undefined"></a></p></div></div></div></footer><script src="/js/jquery-1.11.2.min.js"></script><script src="/js/bootstrap.min.js"></script><script src="/js/main.js"></script><script src="/js/highlight.min.js"></script><script>hljs.initHighlightingOnLoad();</script><script type="text/javascript">var _hmt = _hmt || [];
+(function() {
+  var hm = document.createElement("script");
+  hm.src = "//hm.baidu.com/hm.js?401b87cd7ccfbae7934d36a06c2bb321";
+  var s = document.getElementsByTagName("script")[0]; 
+  s.parentNode.insertBefore(hm, s);
+})();</script></body></html>
